@@ -3,17 +3,24 @@ import useAuthUser from "../hooks/useAuthUser";
 import { BellIcon, HomeIcon, ShipWheelIcon, UsersIcon } from "lucide-react";
 
 const Sidebar = () => {
-  const { authUser } = useAuthUser();
+  const { authUser, isLoading } = useAuthUser();
   const location = useLocation();
   const currentPath = location.pathname;
+
+  const getProfilePic = (profilePic) => {
+    if (!profilePic || profilePic === "") return "/default-avatar.png";
+    return profilePic.startsWith("http") ? profilePic : `http://localhost:5001${profilePic}`;
+  };
+
+  if (isLoading) return null;
 
   return (
     <aside className="w-64 bg-base-200 border-r border-base-300 hidden lg:flex flex-col h-screen sticky top-0">
       <div className="p-5 border-b border-base-300">
         <Link to="/" className="flex items-center gap-2.5">
           <ShipWheelIcon className="size-9 text-primary" />
-          <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary  tracking-wider">
-            Streamify
+          <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary tracking-wider">
+            Streamex
           </span>
         </Link>
       </div>
@@ -50,12 +57,11 @@ const Sidebar = () => {
         </Link>
       </nav>
 
-      {/* USER PROFILE SECTION */}
       <div className="p-4 border-t border-base-300 mt-auto">
         <div className="flex items-center gap-3">
           <div className="avatar">
             <div className="w-10 rounded-full">
-              <img src={authUser?.profilePic} alt="User Avatar" />
+              <img src={getProfilePic(authUser?.profilePic)} alt="User Avatar" />
             </div>
           </div>
           <div className="flex-1">
@@ -70,4 +76,5 @@ const Sidebar = () => {
     </aside>
   );
 };
+
 export default Sidebar;

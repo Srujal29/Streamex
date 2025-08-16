@@ -1,3 +1,4 @@
+// auth.controller.js - Improved version with Stream cleanup
 import { upsertStreamUser } from "../lib/stream.js";
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
@@ -22,10 +23,10 @@ export async function signup(req, res) {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "Email already exists, please use a diffrent one" });
+      return res.status(400).json({ message: "Email already exists, please use a different one" });
     }
 
-    const idx = Math.floor(Math.random() * 100) + 1; // generate a num between 1-100
+    const idx = Math.floor(Math.random() * 100) + 1;
     const randomAvatar = `https://avatar.iran.liara.run/public/${idx}.png`;
 
     const newUser = await User.create({
@@ -41,9 +42,10 @@ export async function signup(req, res) {
         name: newUser.fullName,
         image: newUser.profilePic || "",
       });
-      console.log(`Stream user created for ${newUser.fullName}`);
+      console.log(`✅ Stream user created for ${newUser.fullName}`);
     } catch (error) {
-      console.log("Error creating Stream user:", error);
+      console.log("❌ Error creating Stream user:", error);
+      // Don't fail the signup if Stream user creation fails
     }
 
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET_KEY, {
@@ -52,8 +54,8 @@ export async function signup(req, res) {
 
     res.cookie("jwt", token, {
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      httpOnly: true, // prevent XSS attacks,
-      sameSite: "strict", // prevent CSRF attacks
+      httpOnly: true,
+      sameSite: "strict",
       secure: process.env.NODE_ENV === "production",
     });
 
@@ -84,11 +86,12 @@ export async function login(req, res) {
 
     res.cookie("jwt", token, {
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      httpOnly: true, // prevent XSS attacks,
-      sameSite: "strict", // prevent CSRF attacks
+      httpOnly: true,
+      sameSite: "strict",
       secure: process.env.NODE_ENV === "production",
     });
 
+    console.log(`✅ User ${user.fullName} logged in successfully`);
     res.status(200).json({ success: true, user });
   } catch (error) {
     console.log("Error in login controller", error.message);
@@ -97,8 +100,26 @@ export async function login(req, res) {
 }
 
 export function logout(req, res) {
-  res.clearCookie("jwt");
-  res.status(200).json({ success: true, message: "Logout successful" });
+  try {
+    // Clear the JWT cookie
+    res.clearCookie("jwt");
+    
+    // Log the logout for debugging
+    const userId = req.user?._id;
+    if (userId) {
+      console.log(`🚪 User ${userId} logged out`);
+    }
+    
+    res.status(200).json({ 
+      success: true, 
+      message: "Logout successful",
+      // Signal frontend to cleanup Stream connection
+      shouldCleanupStream: true 
+    });
+  } catch (error) {
+    console.log("Error in logout controller", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 }
 
 export async function onboard(req, res) {
@@ -137,9 +158,10 @@ export async function onboard(req, res) {
         name: updatedUser.fullName,
         image: updatedUser.profilePic || "",
       });
-      console.log(`Stream user updated after onboarding for ${updatedUser.fullName}`);
+      console.log(`✅ Stream user updated after onboarding for ${updatedUser.fullName}`);
     } catch (streamError) {
-      console.log("Error updating Stream user during onboarding:", streamError.message);
+      console.log("❌ Error updating Stream user during onboarding:", streamError.message);
+      // Don't fail onboarding if Stream update fails
     }
 
     res.status(200).json({ success: true, user: updatedUser });
@@ -148,3 +170,4 @@ export async function onboard(req, res) {
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
+

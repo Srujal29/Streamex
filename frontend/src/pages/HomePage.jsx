@@ -48,6 +48,12 @@ const HomePage = () => {
     }
   }, [outgoingFriendReqs]);
 
+  // **Helper function for profile pic fallback**
+  const getProfilePic = (profilePic) => {
+    if (!profilePic || profilePic === "") return "/default-avatar.png";
+    return profilePic.startsWith("http") ? profilePic : `http://localhost:5001${profilePic}`;
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="container mx-auto space-y-10">
@@ -109,7 +115,8 @@ const HomePage = () => {
                     <div className="card-body p-5 space-y-4">
                       <div className="flex items-center gap-3">
                         <div className="avatar size-16 rounded-full">
-                          <img src={user.profilePic} alt={user.fullName} />
+                          {/* **Use getProfilePic helper** */}
+                          <img src={getProfilePic(user.profilePic)} alt={user.fullName} />
                         </div>
 
                         <div>
